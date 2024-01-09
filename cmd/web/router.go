@@ -13,5 +13,3 @@ func (app *application) router() http.Handler {
 
 	return router
 }
-
-//test
