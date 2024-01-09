@@ -14,6 +14,4 @@ func (app *application) router() http.Handler {
 	return router
 }
 
-//test
-
 //test2 buzuk
