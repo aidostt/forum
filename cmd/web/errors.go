@@ -8,7 +8,7 @@ import (
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	app.errorLog.Println(status)
 	app.errorLog.Println(message)
-	//app.render(w, status, "error.tmpl", message)
+	app.render(w, status, "error.tmpl", message)
 }
 
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {

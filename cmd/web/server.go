@@ -15,7 +15,7 @@ func (app *application) serve() error {
 		WriteTimeout: 30 * time.Second,
 		ErrorLog:     app.errorLog,
 	}
-	fmt.Printf("server listens on port %d\n", app.cfg.port)
+	app.infoLog.Printf("server listens on port %d\n", app.cfg.port)
 	err := srv.ListenAndServe()
 	if err != nil {
 		return err
