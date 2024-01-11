@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"forum.aidostt-buzuk/internal/data"
 	"github.com/go-playground/form/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
@@ -16,6 +17,7 @@ type application struct {
 	cfg           config
 	templateCache map[string]*template.Template
 	formDecoder   *form.Decoder
+	models        data.Models
 	infoLog       *log.Logger
 	errorLog      *log.Logger
 }
@@ -60,6 +62,11 @@ func main() {
 		errorLog:      errorLog,
 		formDecoder:   formDecoder,
 		templateCache: templateCache,
+		models:        data.NewModels(db),
+	}
+	err = app.testModel()
+	if err != nil {
+		app.errorLog.Println(err)
 	}
 	err = app.serve()
 	if err != nil {
