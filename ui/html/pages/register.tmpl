@@ -1,0 +1,25 @@
+{{define "title"}}Your art!{{end}}
+{{define "main"}}
+ <form action="/users/register" method="POST">
+       <div>
+          <label>Name</label>
+          <input type="text" name="name" value="" />
+       </div>
+       <div>
+           <label>Nickname</label>
+           <input type="text" name="nickname" value="" />
+       </div>
+       <div>
+           <label>Email</label>
+           <input type="text" name="email" value="example@yahoo.com" />
+       </div>
+
+       <div>
+           <label>Password</label>
+           <input type="text" name="password" value="!Example123" />
+       </div>
+       <div>
+           <input type="submit" value="Register" />
+       </div>
+   </form>
+{{end}}
