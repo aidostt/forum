@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -18,21 +20,20 @@ var (
 )
 
 type User struct {
-	ID        pgtype.UUID `json:"id"`
-	Name      string      `json:"name"`
-	Nickname  string      `json:"nickname"`
-	Email     string      `json:"email"`
-	Password  []byte      `json:"-"`
-	Activated bool        `json:"activated"`
-	Version   int         `json:"-"`
-	CreatedAt time.Time   `json:"created_at"`
+	ID        pgtype.UUID `form:"id"`
+	Name      string      `form:"name"`
+	Nickname  string      `form:"nickname"`
+	Email     string      `form:"email"`
+	Password  password    `form:"-"`
+	Activated bool        `form:"activated"`
+	Version   int         `form:"-"`
+	CreatedAt time.Time   `form:"created_at"`
 }
 
-//
-//type password struct {
-//	plainText string
-//	hashed    []byte
-//}
+type password struct {
+	plainText *string
+	hashed    []byte
+}
 
 type UserModel struct {
 	DB *pgxpool.Pool
@@ -43,13 +44,13 @@ func (m UserModel) Insert(user *User) error {
 	INSERT INTO users (name, nickname, email, password_hash, activated) VALUES ($1, $2, $3, $4, $5)
 	RETURNING id, created_at, version;
 	`
-	args := []any{user.Name, user.Nickname, user.Email, user.Password, user.Activated}
+	args := []any{user.Name, user.Nickname, user.Email, user.Password.hashed, user.Activated}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	err := m.DB.QueryRow(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		var pgErr *pgconn.PgError
-
+		fmt.Println(err)
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
 				return ErrDuplicateEmail
@@ -73,7 +74,7 @@ func (m UserModel) GetByNickName(nickname string) (*User, error) {
 		&user.Name,
 		&user.Nickname,
 		&user.Email,
-		&user.Password,
+		&user.Password.hashed,
 		&user.Activated,
 		&user.Version,
 		&user.CreatedAt,
@@ -99,7 +100,7 @@ func (m UserModel) Update(user *User) error {
 		user.Name,
 		user.Nickname,
 		user.Email,
-		user.Password,
+		user.Password.hashed,
 		user.Activated,
 		user.ID,
 		user.Version,
@@ -121,5 +122,15 @@ func (m UserModel) Update(user *User) error {
 	return nil
 }
 func (m UserModel) Delete(user *User) error {
+	return nil
+}
+
+func (p *password) Set(plaintTextPassword string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintTextPassword), 12)
+	if err != nil {
+		return err
+	}
+	p.plainText = &plaintTextPassword
+	p.hashed = hash
 	return nil
 }

@@ -64,10 +64,6 @@ func main() {
 		templateCache: templateCache,
 		models:        data.NewModels(db),
 	}
-	err = app.testModel()
-	if err != nil {
-		app.errorLog.Println(err)
-	}
 	err = app.serve()
 	if err != nil {
 		log.Fatal(err)
