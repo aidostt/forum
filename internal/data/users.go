@@ -14,9 +14,11 @@ import (
 )
 
 var (
-	ErrDuplicateEmail = errors.New("duplicate email or nickname")
-	ErrNoRecord       = errors.New("no record found")
-	ErrEditConflict   = errors.New("edit conflict")
+	ErrDuplicateEmail    = errors.New("duplicate email")
+	ErrDuplicateToken    = errors.New("duplicate token")
+	ErrDuplicateNickname = errors.New("duplicate nickname")
+	ErrNoRecord          = errors.New("no record found")
+	ErrEditConflict      = errors.New("edit conflict")
 )
 
 type User struct {
@@ -61,7 +63,7 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
-func (m UserModel) GetByNickName(nickname string) (*User, error) {
+func (m UserModel) GetByNickname(nickname string) (*User, error) {
 	query := `
 	SELECT * FROM users 
 	         WHERE nickname = $1;
@@ -113,6 +115,8 @@ func (m UserModel) Update(user *User) error {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
 			return ErrDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_nickname_key"`:
+			return ErrDuplicateNickname
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrEditConflict
 		default:

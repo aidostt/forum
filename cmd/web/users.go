@@ -13,7 +13,7 @@ func (app *application) testModel() error {
 	//	Password:  []byte("buz"),
 	//	Activated: true,
 	//}
-	user, err := app.models.Users.GetByNickName("buzuk")
+	user, err := app.models.Users.GetByNickname("buzuk")
 	if err != nil {
 		return err
 	}
@@ -57,4 +57,8 @@ func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Req
 
 func (app *application) CreateUserHandlerGet(w http.ResponseWriter, r *http.Request) {
 	app.render(w, http.StatusOK, "register.tmpl", nil)
+}
+
+func (app *application) AxtivateUserHandler(w http.ResponseWriter, r *http.Request) {
+
 }
