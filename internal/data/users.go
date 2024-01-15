@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"forum.aidostt-buzuk/internal/validator"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -39,6 +40,30 @@ type password struct {
 
 type UserModel struct {
 	DB *pgxpool.Pool
+}
+
+func ValidateUser(v *validator.Validator, user *User) {
+	v.Check(user.Nickname != "", "nickname", "must be provided")
+	ValidateEmail(v, user.Email)
+	ValidatePlaintextPassword(v, user.Password.plainText)
+
+	if user.Password.hashed == nil {
+		panic("missing user's hashed password")
+	}
+}
+
+func ValidateEmail(v *validator.Validator, email string) {
+	v.Check(email != "", "email", "must be provided")
+	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
+
+}
+
+func ValidatePlaintextPassword(v *validator.Validator, plaintext *string) {
+	v.Check(*plaintext != "", "password", "must be provided")
+	v.Check(len(*plaintext) >= 8, "password", "must be more than 8 characters")
+	v.Check(len(*plaintext) <= 72, "password", "must be less than 72 characters")
+	v.Check(validator.Matches(*plaintext, validator.PasswordRX), "password", "password must contain at least: "+
+		"1 special sign, 1 uppercase letter, 1 lowercase letter, 1 number")
 }
 
 func (m UserModel) Insert(user *User) error {

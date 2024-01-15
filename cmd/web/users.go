@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"forum.aidostt-buzuk/internal/data"
+	"forum.aidostt-buzuk/internal/validator"
 	"net/http"
 )
 
@@ -46,10 +48,23 @@ func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Req
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	//TODO: validate input data
+	v := validator.New()
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponce(w, r, v.Errors)
+	}
 	err = app.models.Users.Insert(user)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email already exists.")
+			app.failedValidationResponce(w, r, v.Errors)
+		case errors.Is(err, data.ErrDuplicateNickname):
+			v.AddError("email", "a user with this nickname already exists.")
+			app.failedValidationResponce(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+
+		}
 		return
 	}
 	app.render(w, http.StatusOK, "home.tmpl", nil)
