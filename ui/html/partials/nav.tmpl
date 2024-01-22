@@ -1,6 +1,11 @@
 {{define "nav"}}
-    <nav>
-        <a href='/'>Home</a>
+<nav>
+    <a href='/'>Home</a>
+    {{if .User}}
+        <a href='/user/{{.User.Nickname}}'> {{.User.Nickname}} </a>
+    {{else}}
+        <a href='/user/login'>Log In</a>
         <a href='/user/register'>Register</a>
-    </nav>
+    {{end}}
+</nav>
 {{end}}
