@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/go-playground/form/v4"
 	"net/http"
+	"time"
 )
 
 func (app *application) decodePostForm(r *http.Request, dst any) error {
@@ -22,4 +23,10 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 		return err
 	}
 	return nil
+}
+
+func (app *application) newTemplateData(r *http.Request) *templateData {
+	return &templateData{
+		CurrentYear: time.Now().Year(),
+	}
 }

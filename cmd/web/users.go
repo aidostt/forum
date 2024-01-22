@@ -7,6 +7,14 @@ import (
 	"net/http"
 )
 
+type userCreateForm struct {
+	Name                string `form:"name"`
+	Nickname            string `form:"nickname"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 func (app *application) testModel() error {
 	//user := data.User{
 	//	Name:      "buzuk",
@@ -26,54 +34,57 @@ func (app *application) testModel() error {
 }
 
 func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Name     string `form:"name"`
-		Nickname string `form:"nickname"`
-		Email    string `form:"email"`
-		password string `form:"password"`
-	}
-	err := app.decodePostForm(r, &input)
+	var form userCreateForm
+	d := app.newTemplateData(r)
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 	user := &data.User{
-		Name:      input.Name,
-		Nickname:  input.Nickname,
-		Email:     input.Email,
+		Name:      form.Name,
+		Nickname:  form.Nickname,
+		Email:     form.Email,
 		Activated: false,
 	}
-	err = user.Password.Set(input.password)
+	err = user.Password.Set(form.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	v := validator.New()
-	if data.ValidateUser(v, user); !v.Valid() {
-		app.failedValidationResponce(w, r, v.Errors)
+	form.Validator = *(validator.New())
+	if data.ValidateUser(&(form.Validator), user); !form.Validator.Valid() {
+		d.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "register.tmpl", d)
+		return
 	}
 	err = app.models.Users.Insert(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrDuplicateEmail):
-			v.AddError("email", "a user with this email already exists.")
-			app.failedValidationResponce(w, r, v.Errors)
+			form.Validator.AddError("email", "a user with this email already exists.")
+			d.Form = form
+			app.render(w, http.StatusUnprocessableEntity, "register.tmpl", d)
 		case errors.Is(err, data.ErrDuplicateNickname):
-			v.AddError("email", "a user with this nickname already exists.")
-			app.failedValidationResponce(w, r, v.Errors)
+			form.Validator.AddError("nickname", "a user with this nickname already exists.")
+			d.Form = form
+			app.render(w, http.StatusUnprocessableEntity, "register.tmpl", d)
 		default:
 			app.serverErrorResponse(w, r, err)
 
 		}
 		return
 	}
-	app.render(w, http.StatusOK, "home.tmpl", nil)
+	d.User = user
+	app.render(w, http.StatusOK, "home.tmpl", d)
 }
 
 func (app *application) CreateUserHandlerGet(w http.ResponseWriter, r *http.Request) {
-	app.render(w, http.StatusOK, "register.tmpl", nil)
+	d := app.newTemplateData(r)
+	d.Form = userCreateForm{}
+	app.render(w, http.StatusOK, "register.tmpl", d)
 }
 
-func (app *application) AxtivateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
