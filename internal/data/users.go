@@ -4,14 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"forum.aidostt-buzuk/internal/validator"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
+	"strings"
 	"time"
+	"unicode"
 )
 
 var (
@@ -62,8 +63,38 @@ func ValidatePlaintextPassword(v *validator.Validator, plaintext *string) {
 	v.Check(*plaintext != "", "password", "must be provided")
 	v.Check(len(*plaintext) >= 8, "password", "must be more than 8 characters")
 	v.Check(len(*plaintext) <= 72, "password", "must be less than 72 characters")
-	v.Check(validator.Matches(*plaintext, validator.PasswordRX), "password", "password must contain at least: "+
-		"1 special sign, 1 uppercase letter, 1 lowercase letter, 1 number")
+	//v.Check(validator.Matches(*plaintext, validator.PasswordRX), "password", "password must contain at least: "+
+	//	"1 special sign, 1 uppercase letter, 1 lowercase letter, 1 number")
+	var (
+		up    bool
+		low   bool
+		digit bool
+		spec  bool
+	)
+
+	for _, char := range *plaintext {
+		switch {
+		case unicode.IsUpper(char):
+			up = true
+		case unicode.IsLower(char):
+			low = true
+		case unicode.IsDigit(char):
+			digit = true
+		case strings.IndexRune("!#$%&'*+\\/=?^_`{|}~-", char) != -1:
+			spec = true
+		}
+	}
+
+	switch {
+	case !up:
+		v.AddError("password", "must contain at least 1 uppercase letter")
+	case !low:
+		v.AddError("password", "must contain at least 1 lowercase letter")
+	case !digit:
+		v.AddError("password", "must contain at least 1 digit")
+	case !spec:
+		v.AddError("password", "must contain at least 1 special character")
+	}
 }
 
 func (m UserModel) Insert(user *User) error {
@@ -77,9 +108,10 @@ func (m UserModel) Insert(user *User) error {
 	err := m.DB.QueryRow(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		fmt.Println(err)
 		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
+			if strings.Contains(pgErr.ConstraintName, "nickname") {
+				return ErrDuplicateNickname
+			} else if strings.Contains(pgErr.ConstraintName, "email") {
 				return ErrDuplicateEmail
 			}
 		}
