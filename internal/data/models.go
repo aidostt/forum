@@ -16,6 +16,13 @@ type Models struct {
 		Insert(*Token) error
 		DeleteAllForUser(string, pgtype.UUID) error
 	}
+	Posts interface {
+		Insert(*Post) error
+		GetAll() ([]*Post, error)
+		GetById(pgtype.UUID) (*Post, error)
+		Update(*Post) error
+		Delete(*Post) error
+	}
 }
 
 func NewModels(db *pgxpool.Pool) Models {
