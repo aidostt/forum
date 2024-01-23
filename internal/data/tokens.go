@@ -42,7 +42,7 @@ func GenerateNewToken(userID pgtype.UUID, ttl time.Duration, scope string) (*Tok
 	return token, nil
 }
 
-func (m *TokenModel) New(userID pgtype.UUID, ttl time.Duration, scope string) (*Token, error) {
+func (m TokenModel) New(userID pgtype.UUID, ttl time.Duration, scope string) (*Token, error) {
 	token, err := GenerateNewToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err

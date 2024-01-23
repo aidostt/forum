@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"forum.aidostt-buzuk/internal/validator"
 	"github.com/jackc/pgx/v5"
@@ -154,7 +153,6 @@ func (m UserModel) Update(user *User) error {
 	WHERE id = $6 AND version = $7
 	RETURNING version
 `
-	//TODO: discuss the question "with which factor we will update data in db (id, nickname, email)"
 	args := []any{
 		user.Name,
 		user.Nickname,
@@ -169,12 +167,13 @@ func (m UserModel) Update(user *User) error {
 	defer cancel()
 	err := m.DB.QueryRow(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
+		var pgErr *pgconn.PgError
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-			return ErrDuplicateEmail
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_nickname_key"`:
+		case strings.Contains(pgErr.ConstraintName, "nickname"):
 			return ErrDuplicateNickname
-		case errors.Is(err, sql.ErrNoRows):
+		case strings.Contains(pgErr.ConstraintName, "email"):
+			return ErrDuplicateEmail
+		case errors.Is(err, pgx.ErrNoRows):
 			return ErrEditConflict
 		default:
 			return err
@@ -183,7 +182,11 @@ func (m UserModel) Update(user *User) error {
 	return nil
 }
 func (m UserModel) Delete(user *User) error {
-	return nil
+	query := `DELETE FROM users WHERE id = $1 AND version = $2`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_, err := m.DB.Exec(ctx, query, user.ID, user.Version)
+	return err
 }
 
 func (p *password) Set(plaintTextPassword string) error {
