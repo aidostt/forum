@@ -16,7 +16,6 @@ func (app *application) router() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	router.HandlerFunc(http.MethodGet, "/", app.home)
-
 	router.HandlerFunc(http.MethodPost, "/user/register", app.CreateUserHandlerPost)
 	router.HandlerFunc(http.MethodGet, "/user/register", app.CreateUserHandlerGet)
 

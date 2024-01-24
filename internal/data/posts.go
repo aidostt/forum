@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"forum.aidostt-buzuk/internal/validator"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,8 +20,12 @@ type Post struct {
 	CreatedAt   time.Time   `form:"created_at"`
 }
 
-//TODO:make migrations files for posts
-//TODO:create CRUD operations for posts
+//TODO: implement post validator
+
+func ValidatePost(v *validator.Validator, post *Post) {
+	v.Check(post.Heading != "", "heading", "heading should be provided")
+	v.Check(post.Description != "", "description", "description should be provided")
+}
 
 type PostModel struct {
 	DB *pgxpool.Pool
@@ -39,7 +44,8 @@ VALUES ($1, $2, $3, $4) RETURNING id, version, created_at`
 	return nil
 }
 
-func (m PostModel) GeAll(heading string, tags []string, filters Filters) ([]*Post, error) {
+// GetAll TODO: implement filters for posts
+func (m PostModel) GetAll(heading string, tags []string, filters Filters) ([]*Post, error) {
 	return nil, nil
 }
 

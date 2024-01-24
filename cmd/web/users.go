@@ -75,6 +75,11 @@ func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Req
 		}
 		return
 	}
+	//TODO: perform permissions for user
+
+	//TODO: create activation token for user
+	//TODO: write activate user endpoint
+
 	d.User = user
 	app.render(w, http.StatusOK, "home.tmpl", d)
 }
@@ -88,3 +93,8 @@ func (app *application) CreateUserHandlerGet(w http.ResponseWriter, r *http.Requ
 func (app *application) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
+
+//TODO: activate User
+//TODO: log in (save token and compare it after, middleware)
+//TODO: log out
+//TODO: profile overview, posts, comments and user settings
