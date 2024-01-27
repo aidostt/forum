@@ -33,7 +33,7 @@ func (app *application) testModel() error {
 	return nil
 }
 
-func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Request) {
+func (app *application) createUserHandlerPost(w http.ResponseWriter, r *http.Request) {
 	var form userCreateForm
 	d := app.newTemplateData(r)
 	err := app.decodePostForm(r, &form)
@@ -84,13 +84,13 @@ func (app *application) CreateUserHandlerPost(w http.ResponseWriter, r *http.Req
 	app.render(w, http.StatusOK, "home.tmpl", d)
 }
 
-func (app *application) CreateUserHandlerGet(w http.ResponseWriter, r *http.Request) {
+func (app *application) createUserHandlerGet(w http.ResponseWriter, r *http.Request) {
 	d := app.newTemplateData(r)
 	d.Form = userCreateForm{}
 	app.render(w, http.StatusOK, "register.tmpl", d)
 }
 
-func (app *application) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 

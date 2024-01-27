@@ -1,0 +1,30 @@
+{{define "title"}}Create Post{{end}}
+{{define "main"}}
+ <form action="/post/create" method="POST">
+ {{with .Form}}
+     <div>
+         <label>Heading</label>
+         {{with .Errors.heading}}
+             <label class="error">{{.}}</label>
+         {{end}}
+          <input type="text" name="heading" value="{{.Heading}}"/>
+
+     </div>
+     <div>
+         <label>Description:</label>
+         {{with .Errors.description}}
+             <label class="error">{{.}}</label>
+         {{end}}
+         <input type="text" name="description" value="{{.Description}}"/>
+     </div>
+     <div>
+         <label>Tags:</label>
+         <input type="text" name="tags" value="{{.Tags}}"/>
+     </div>
+
+     <div>
+         <input type="submit" value="Register" />
+     </div>
+     {{end}}
+   </form>
+{{end}}

@@ -7,8 +7,8 @@ import (
 	"encoding/base32"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )

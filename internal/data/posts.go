@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"forum.aidostt-buzuk/internal/validator"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -96,10 +96,10 @@ func (m PostModel) Update(post *Post) error {
 	return nil
 }
 
-func (m PostModel) Delete(post *Post) error {
+func (m PostModel) Delete(id pgtype.UUID) error {
 	query := `DELETE FROM posts WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	_, err := m.DB.Exec(ctx, query, post.ID)
+	_, err := m.DB.Exec(ctx, query, id)
 	return err
 }

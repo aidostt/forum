@@ -1,0 +1,14 @@
+{{define "title"}}Post "{{.Post.Heading}}"{{end}}
+{{define "main"}}
+    {{with .Post}}
+    <div class='post'>
+        <div class='metadata'>
+            <strong>{{.Heading}}</strong>
+        </div>
+        <pre><code>{{.Description}}</code></pre>
+        <div class='metadata'>
+            <time>Created: {{humanDate .CreatedAt}}</time>
+        </div>
+    </div>
+    {{end}}
+{{end}}

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"errors"
 	"forum.aidostt-buzuk/internal/data"
 	"forum.aidostt-buzuk/internal/validator"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgtype"
 	"net/http"
 )
 
@@ -16,13 +17,13 @@ type postCreateForm struct {
 
 //TODO: post should be filtered by time, tags and quantity of likes
 
-func (app *application) CreatePostHandlerGet(w http.ResponseWriter, r *http.Request) {
+func (app *application) createPostHandlerGet(w http.ResponseWriter, r *http.Request) {
 	d := app.newTemplateData(r)
 	d.Form = postCreateForm{}
 	//TODO: if user not registered/logged in or didn't pass the activation redirect to log in
 	app.render(w, http.StatusOK, "create.tmpl", d)
 }
-func (app *application) CreatePostHandlerPost(w http.ResponseWriter, r *http.Request) {
+func (app *application) createPostHandlerPost(w http.ResponseWriter, r *http.Request) {
 	var form postCreateForm
 	d := app.newTemplateData(r)
 	err := app.decodePostForm(r, &form)
@@ -31,6 +32,10 @@ func (app *application) CreatePostHandlerPost(w http.ResponseWriter, r *http.Req
 		return
 	}
 	var authorID pgtype.UUID
+	err = authorID.Set("6f52ada3-0c28-45d7-9b35-e420277bc127")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 	//TODO: retrieve authors id
 	post := &data.Post{
 		AuthorID:    authorID,
@@ -42,10 +47,116 @@ func (app *application) CreatePostHandlerPost(w http.ResponseWriter, r *http.Req
 	if data.ValidatePost(&(form.Validator), post); !form.Valid() {
 		d.Form = form
 		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", d)
+		return
 	}
 	err = app.models.Posts.Insert(post)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+	d.Post = post
+	app.render(w, http.StatusOK, "view.tmpl", d)
+}
+
+func (app *application) showPostHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.retrieveID(r)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrBadRequest):
+			app.badRequestResponse(w, r, err)
+		case errors.Is(err, ErrNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	d := app.newTemplateData(r)
+	post, err := app.models.Posts.GetById(id)
+	if err != nil {
+		if errors.Is(err, data.ErrNoRecord) {
+		}
+		return
+	}
+	d.Post = post
+	app.render(w, http.StatusOK, "view.tmpl", d)
+}
+
+func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.retrieveID(r)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrBadRequest):
+			app.badRequestResponse(w, r, err)
+		case errors.Is(err, ErrNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	d := app.newTemplateData(r)
+	post, err := app.models.Posts.GetById(id)
+	if err != nil {
+		if errors.Is(err, data.ErrNoRecord) {
+		}
+		return
+	}
+
+	var input postCreateForm
+	err = app.decodePostForm(r, &input)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	var authorID pgtype.UUID
+	err = authorID.Set("6f52ada3-0c28-45d7-9b35-e420277bc127")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+	//TODO: retrieve authors id
+	post = &data.Post{
+		AuthorID:    authorID,
+		Heading:     input.Heading,
+		Description: input.Description,
+		Tags:        input.Tags,
+	}
+	input.Validator = *(validator.New())
+	if data.ValidatePost(&(input.Validator), post); !input.Valid() {
+		d.Form = input
+		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", d)
+		return
+	}
+	err = app.models.Posts.Update(post)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+	d.Post = post
+	app.render(w, http.StatusOK, "view.tmpl", d)
+}
+
+func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.retrieveID(r)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrBadRequest):
+			app.badRequestResponse(w, r, err)
+		case errors.Is(err, ErrNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	err = app.models.Posts.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecord):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	//TODO: send "post has been deleted successfully" message
 	app.render(w, http.StatusOK, "home.tmpl", nil)
 }
