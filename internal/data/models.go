@@ -13,8 +13,7 @@ type Models struct {
 		Delete(*User) error
 	}
 	Tokens interface {
-		Insert(*Token) error
-		DeleteAllForUser(string, pgtype.UUID) error
+		SetSession(*User, Session) error
 	}
 	Posts interface {
 		Insert(*Post) error

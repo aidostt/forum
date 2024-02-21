@@ -18,6 +18,8 @@ func (app *application) router() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/", app.home)
 	router.HandlerFunc(http.MethodPost, "/user/register", app.createUserHandlerPost)
 	router.HandlerFunc(http.MethodGet, "/user/register", app.createUserHandlerGet)
+	router.HandlerFunc(http.MethodGet, "/user/login", app.logInGet)
+	router.HandlerFunc(http.MethodPost, "/user/login", app.logInPost)
 
 	router.HandlerFunc(http.MethodGet, "/post/create", app.createPostHandlerGet)
 	router.HandlerFunc(http.MethodPost, "/post/create", app.createPostHandlerPost)

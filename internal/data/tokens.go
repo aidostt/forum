@@ -2,16 +2,30 @@ package data
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base32"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
+
+// TODO: userSignIn handler --> userSignInService (returns tokens) --> CreateSession (returns tokens) --> insert into db
+// TODO:					 getByCredentials, createSession				newAccess newRefresh
+// TODO: find user using refresh token
+// TODO: find user ID
+// TODO: create newRefreshToken ; NewAccessToken
+// TODO: create session
+// TODO: insert/set session
+// TODO: refresh tokens
+// TODO: parse accessToken into userID
+//
+
+type Session struct {
+	RefreshToken string    `json:"refreshToken" bson:"refreshToken"`
+	ExpiredAt    time.Time `json:"expiresAt" bson:"expiresAt"`
+}
 
 type Token struct {
 	PlainText string      `form:"token"`
@@ -25,34 +39,26 @@ type TokenModel struct {
 	DB *pgxpool.Pool
 }
 
-func GenerateNewToken(userID pgtype.UUID, ttl time.Duration, scope string) (*Token, error) {
-	token := &Token{
-		UserID: userID,
-		Scope:  scope,
-		Expiry: time.Now().Add(ttl),
-	}
-	randomBytes := make([]byte, 16)
-	_, err := rand.Read(randomBytes)
+func (m TokenModel) SetSession(user *User, session Session) error {
+	//TODO: implement sessions into users table
+	query := `UPDATE users 
+	SET session = $1
+	WHERE id = $2
+	RETURNING version`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := m.DB.QueryRow(ctx, query, session, user.ID).Scan(&user.Version)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
 	}
-	token.PlainText = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
-	hash := sha256.Sum256([]byte(token.PlainText))
-	token.Hash = hash[:]
-	return token, nil
+	return nil
 }
 
-func (m TokenModel) New(userID pgtype.UUID, ttl time.Duration, scope string) (*Token, error) {
-	token, err := GenerateNewToken(userID, ttl, scope)
-	if err != nil {
-		return nil, err
-	}
-	err = m.Insert(token)
-	if err != nil {
-		return nil, err
-	}
-	return token, nil
-}
 func (m TokenModel) Insert(token *Token) error {
 	query := `INSERT INTO tokens (hash, user_id, expiry, scope) VALUES ($1, $2, $3, $4)`
 

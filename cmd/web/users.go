@@ -15,6 +15,12 @@ type userCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+type UserLogInForm struct {
+	Nickname            string `form:"nickname"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 func (app *application) testModel() error {
 	//user := data.User{
 	//	Name:      "buzuk",
@@ -92,6 +98,50 @@ func (app *application) createUserHandlerGet(w http.ResponseWriter, r *http.Requ
 
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 
+}
+
+func (app *application) logInGet(w http.ResponseWriter, r *http.Request) {
+	//render page
+}
+
+func (app *application) logInPost(w http.ResponseWriter, r *http.Request) {
+	var form UserLogInForm
+	d := app.newTemplateData(r)
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	user, err := app.models.Users.GetByNickname(form.Nickname)
+	form.Validator = *(validator.New())
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecord):
+			form.Validator.AddError("username", "User with given credentials does not exists")
+			form.Validator.AddError("password ", "User with given credentials does not exists")
+			d.Form = form
+			app.render(w, http.StatusUnprocessableEntity, "signin.tmpl", d)
+
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	ok, err := user.Password.Matches(form.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	if !ok {
+		form.Validator.AddError("username", "User with given credentials does not exists")
+		form.Validator.AddError("password ", "User with given credentials does not exists")
+		d.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "signin.tmpl", d)
+		return
+	}
+
+	//create session --> create newAccess newRefresh tokens
+	//insert in db
 }
 
 //TODO: activate User
